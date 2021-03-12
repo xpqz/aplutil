@@ -1,0 +1,43 @@
+:Namespace test
+    ⍝ Unit tests for the Dict class
+    assert←{⍺←'assertion failure' ⋄ 0∊⍵:⍺ ⎕signal 8 ⋄ shy←0}
+
+    ∇ run
+        ⍎¨'test_.+'⎕S'&'⎕NL ¯3
+    ∇
+
+    ∇ show name
+        ⎕←name,((30-≢name)/'.'),'[OK]'
+    ∇
+
+    ∇ test_constructor ;z
+        z←⎕NEW #.dict.Dict (('APL' 'Rocks!')(42 'Bob'))
+        assert z['Rocks!' 'APL' 'APL'] ≡ 'Bob' 42 42
+        show 'constructor'
+    ∇
+
+    ∇ test_update1 ;z
+        z←⎕NEW #.dict.Dict (('APL' 'Rocks!')(42 'Bob'))
+        z[⊂'Rocks!'] ← ⊂'Eric'
+        assert z._keys ≡ 'APL' 'Rocks!'
+        assert z._values ≡ 42 'Eric'
+        show 'update1'
+    ∇
+
+    ∇ test_upsert ;z
+        z←⎕NEW #.dict.Dict (('APL' 'Rocks!')(42 'Bob'))
+        z['Rocks!' 'NewKey'] ← 'Eric' 'NewVal'
+        assert z._keys ≡ 'APL' 'Rocks!' 'NewKey'
+        assert z._values ≡ 42 'Eric' 'NewVal'
+        show 'upsert'
+    ∇
+
+    ∇ test_add ;z
+        z←⎕NEW #.dict.Dict (('APL' 'Rocks!')(42 'Bob'))
+        z[⊂'NewKey'] ← ⊂'NewVal'
+        assert z._keys ≡ 'APL' 'Rocks!' 'NewKey'
+        assert z._values ≡ 42 'Bob' 'NewVal'
+        show 'add'
+    ∇
+
+:EndNamespace

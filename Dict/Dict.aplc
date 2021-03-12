@@ -1,0 +1,35 @@
+:Class Dict
+    :Field Public _keys←(1500⌶)⍬
+    :Field Public _values←⍬
+
+    :Property Keyed Default Item
+        :Access Public Instance
+
+        ∇ r←get arg
+            r←_values[_keys⍳⊃arg.Indexers]
+        ∇
+
+        ∇ set arg;dedupe;unique;kk;vv;seen
+            (vv kk)←(≠⊃arg.Indexers)∘/¨arg.NewValue (⊃arg.Indexers)
+            seen ← kk∊_keys
+            _values[_keys⍳seen/kk]←seen/vv
+            (_keys _values),←(~seen)∘/¨kk vv
+        ∇
+    :EndProperty
+
+    ∇ Make(keys values)
+        :Access Public
+        :Implements Constructor
+        (_keys _values)←keys values
+    ∇
+
+    ∇ r←AsArray
+      :Access Public Instance
+      r←↑_keys _values
+    ∇
+
+    ∇ r←Hashed
+      :Access Public Instance
+      r←1(1500⌶)_keys
+    ∇
+:EndClass

@@ -1,0 +1,32 @@
+:Namespace unittest
+    ⎕IO ← 0
+    run←{
+        tests ← 'test_.+'⎕S'&'⎕NL ¯3
+        0=≢tests: 'no tests found'
+        ↑{⍺,('.'/⍨30-≢⍺),⍵⊃'[FAIL]' '[OK]'}⌿↑tests (⍎¨tests,¨⊂' ⍬')
+    }
+
+    test_constructor←{
+        z←⎕NEW #.dict.Dict (('APL' 'Rocks!')(42 'Bob'))
+        z['Rocks!' 'APL' 'APL'] ≡ 'Bob' 42 42
+    }
+
+    test_update←{
+        z←⎕NEW #.dict.Dict (('APL' 'Rocks!')(42 'Bob'))
+        z[⊂'Rocks!'] ← ⊂'Eric'
+        (z._keys ≡ 'APL' 'Rocks!') ∧ (z._values ≡ 42 'Eric+')
+    }
+
+    test_upsert←{
+        z←⎕NEW #.dict.Dict (('APL' 'Rocks!')(42 'Bob'))
+        z['Rocks!' 'NewKey'] ← 'Eric' 'NewVal'
+        (z._keys ≡ 'APL' 'Rocks!' 'NewKey')∧(z._values ≡ 42 'Eric' 'NewVal')
+    }
+
+    test_add←{
+        z←⎕NEW #.dict.Dict (('APL' 'Rocks!')(42 'Bob'))
+        z[⊂'NewKey'] ← ⊂'NewVal'
+        (z._keys ≡ 'APL' 'Rocks!' 'NewKey')∧(z._values ≡ 42 'Bob' 'NewVal')
+    }
+
+:EndNamespace

@@ -1,0 +1,72 @@
+:Namespace cluster
+    ⎕IO←0 ⋄ ⎕ML←1
+    hc←⎕SE.SALT.Load'HttpCommand'
+
+    base←'https://cloudant.cloudant.com/'
+    lite←'billing.tiered.bluemix.lite'
+    std←'billing.tiered.bluemix.standard'
+
+    dotclou←{⎕JSON⍠'Dialect' 'JSON5'⊢2⌽ '}}{"":{' , ∊'^;.*' '^\[(.*)]' '^(.*?)\s*=\s*(.*)'⎕R'' '},"\1":{' '"\1":"\2",' ⊢ ⊃⎕NGET ⍵}
+
+    creds←dotclou '/Users/stefan/.clou'
+    hd←1 2⍴'Authorization' (⊃,/'Basic '(hc.Base64Encode creds.cloudant.dou_user,':',creds.cloudant.dou_password))
+    pp←{1(⎕JSON⍠'Compact' 0)⍵}
+
+    ∇ r←regions ;url;regions;names ⍝ Niladic; return cluster data for all region defaults
+      url←base,'bmx-broker-config/ibm-cloud-production' ⍝ Single doc
+      reg←(_←hc.GetJSON 'GET' url '' hd).Data.regions
+      r←get (⊃,/∪(reg⍎¨reg.⎕NL¯9).provisioning_cluster)
+    ∇
+
+    plan←{pp(_←hc.GetJSON 'GET' (base,'billing-tier-definitions/',⍵) '' hd).Data} ⍝ Return plan doc for ⍵
+    group←{(k v)←↓⍉↑⍵⋄r←⍬⍨¨⍺⋄r[⍺⍳k],←v⋄r}
+
+    ∇ r←plans ;p;names;reads ⍝ Niladic; return names and per-plan units of all plans
+      p←(_←hc.GetJSON 'GET' (base,'billing-tier-definitions/_all_docs?include_docs=true') '' hd).Data.rows
+      names←p.id
+      reads←⌈p.doc.throughput.lookup÷100 ⍝ For fixed/custom plans, approx as reads/100
+      r←↑names reads
+    ∇
+
+    totaccts←{ ⍝ Return the total number of accounts for each ⍵, grouped by plan. ⍺ is ouput of `plans`
+        (params←⎕NS⍬).keys←,⍵ ∘.{⍺ ⍵} 0⌷⍺
+        url←base,'users/_design/ccm/_view/cluster_plan_count?group=true'
+        body←(_←hc.GetJSON 'POST' url params hd).Data
+        ⍵ group {(1↑⍵),⊂1↓⍵}¨,⌿⍉↑body.rows.(key value)
+    }
+
+    units←{ ⍝ Return the total number of units for each ⍵, excluding lites. ⍺ is ouput of `plans`
+        data←⍺
+        (params←⎕NS⍬).keys←,⍵ ∘.{⍺ ⍵} (0⌷data)~⊂lite
+        url←base,'users/_design/ccm_granular/_view/cluster_plan_units?group=true'
+        body←(_←hc.GetJSON 'POST' url params hd).Data
+        unitprod←{(h t)←(⊃1↑⍵)(¯2↑⍵)⋄h (t[1]×data[1;(0⌷data)⍳0⌷t])}
+        +/¨⍵ group unitprod¨(⊃,/)¨body.rows.(key value)
+    }
+
+    get←{ ⍝ Return data of cluster name(s) ⍵
+        ⍺←0
+        names←,⊆⍵
+        pl←plans
+        url←base,'clusters/_design/clusters/_view/overview'
+        (params←⎕NS⍬).keys←names
+        body←(_←hc.GetJSON 'POST' url params hd).Data
+        docs←body.rows.value
+        (clusters←⎕NS¨(≢docs)⍴⊂⍬).(name tenancy location dbs lbs clustergroup)←docs.(cluster tenancy region db_count lb_count clustergroup)
+        clusters.accounts←pl totaccts names
+        clusters.units←pl units names
+        clusters.FSC←{'cldtibmc_'≡9↑⍵}¨clusters.clustergroup
+        ⍺:clusters   ⍝ Return the namespaces, rather than JSON
+        pp¨clusters
+    }
+
+    ∇ r←list ;url ⍝ Niladic; return all names of ccm clusters
+      url←base,'clusters/_design/ccm/_view/bluemix-ccm-clusters?reduce=false'
+      r←(_←hc.GetJSON 'GET' url '' hd).Data.rows.key
+    ∇
+
+    ∇ r←load ;names
+      names←list
+      r←get names
+    ∇
+:EndNamespace
