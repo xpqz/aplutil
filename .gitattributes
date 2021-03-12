@@ -1,3 +1,4 @@
 *.apln linguist-language=APL
 *.aplc linguist-language=APL
-*.apln linguist-language=APL
+*.aplf linguist-language=APL
+*.dyalog linguist-language=APL
